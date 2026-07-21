@@ -1,0 +1,13 @@
+{
+  "name": "audit-apps",
+  "version": "1.0.0",
+  "description": "Frontend build (Tailwind CSS) for Audit Finance Dashboard - CodeIgniter 3",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./assets/css/input.css -o ./assets/css/app.css --minify",
+    "watch:css": "tailwindcss -i ./assets/css/input.css -o ./assets/css/app.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
+  }
+}
