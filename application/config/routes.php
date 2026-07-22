@@ -1,5 +1,5 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
 /*
 | -------------------------------------------------------------------------
@@ -7,7 +7,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 | -------------------------------------------------------------------------
 */
 $route['default_controller']   = 'auth';
-$route['404_override']        = '';
+$route['404_override']         = '';
 $route['translate_uri_dashes'] = FALSE;
 
 /*
@@ -29,20 +29,23 @@ $route['api/dashboard/stats']   = 'dashboard/get_stats_json';
 
 /*
 | -------------------------------------------------------------------------
-| WEB AUDIT ROUTES (Tampilan Halaman/HTML)
+| AUDIT CRUD & VIEWS ROUTES
 | -------------------------------------------------------------------------
 */
 $route['audit']                = 'audit/index';          // Halaman Tabel Utama Audit
-$route['audit/create']         = 'audit/form_create';    // Halaman Form Tambah Audit (Ubah method ke form_create)
-$route['audit/detail/(:num)']  = 'audit/view_detail/$1'; // Halaman View Detail Audit & Stage Workflow
+$route['audit/create']         = 'audit/create';         // Halaman Form Tambah Audit
+$route['audit/store']          = 'audit/store';          // POST: Simpan Audit Baru
+$route['audit/detail/(:num)']  = 'audit/detail/$1';      // Halaman Detail Audit & Stage Workflow
 
 /*
 | -------------------------------------------------------------------------
-| API / FORM SUBMISSION ROUTES (Mengolah Data / JSON Response)
+| AUDIT STAGE WORKFLOW ROUTES (FORM SUBMISSIONS)
 | -------------------------------------------------------------------------
 */
-$route['api/audit']                       = 'audit/create';                 // POST: Simpan Audit Baru
-$route['api/audit/(:num)']                = 'audit/detail/$1';              // GET: Detail JSON Data
-$route['api/audit/investigasi/(:num)']    = 'audit/upload_investigasi/$1'; // POST: Upload Investigasi
-$route['api/audit/auditee/(:num)']        = 'audit/upload_auditee/$1';     // POST: Upload Auditee
-$route['api/audit/review/(:num)']         = 'audit/review_berita_acara/$1';// POST: Review SPV / Head Audit
+$route['audit/submit_telaah']       = 'audit/submit_telaah';       // Stage 1 -> 2
+$route['audit/submit_investigasi']  = 'audit/submit_investigasi';  // Stage 2 -> 3
+$route['audit/submit_auditee']      = 'audit/submit_auditee';      // Stage 3 -> 4
+$route['audit/submit_review_spv']   = 'audit/submit_review_spv';   // Stage 4 -> 5 / 2
+$route['audit/submit_review_head']  = 'audit/submit_review_head';  // Stage 5 -> 6 / 4
+$route['audit/submit_berita_acara'] = 'audit/submit_berita_acara'; // Stage 6
+$route['audit/submit_feedback']     = 'audit/submit_feedback';     // Stage 7 (Feedback -> Closed)
