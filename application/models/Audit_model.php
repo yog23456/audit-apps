@@ -123,10 +123,12 @@ class Audit_model extends CI_Model
     // Ambil daftar nama proyek unik buat dropdown
     public function get_distinct_projects()
     {
-        $this->db->distinct();
-        $this->db->select('project_name');
-        $this->db->order_by('project_name', 'ASC');
-        return $this->db->get('audit')->result();
+        $this->db->select('a1.project_name, a1.nilai');
+        // $this->db->select('a1.auditee_id');
+        $this->db->from('audit a1');
+        $this->db->join('(SELECT project_name, MAX(id) as max_id FROM audit WHERE project_name != "" GROUP BY project_name) a2', 'a1.id = a2.max_id');
+        $this->db->order_by('a1.project_name', 'ASC');
+        return $this->db->get()->result();
     }
 
     // Ambil user berdasarkan role tertentu (misal: 'auditee')

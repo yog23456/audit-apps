@@ -40,9 +40,20 @@ class Dashboard extends CI_Controller
         ];
 
         $data['summary']        = $this->Dashboard_model->get_summary_cards($filters);
+
+        // Pagination for detailed cases
+        $limit = 6;
+        $page = $this->input->get('page', TRUE);
+        $page = (empty($page) || !is_numeric($page) || $page < 1) ? 1 : (int) $page;
+        $offset = ($page - 1) * $limit;
+
+        $total_rows = $data['summary']['total_case'] ?? 0;
+        $data['total_pages'] = (int) ceil($total_rows / $limit);
+        $data['current_page'] = $page;
+
         $data['pipeline']       = $this->Dashboard_model->get_pipeline_counts($filters);
         $data['stage_stats']    = $this->Dashboard_model->get_cases_per_stage();
-        $data['recent_audits']  = $this->Dashboard_model->get_recent_audits(null, $filters); // Ambil semua data terfilter
+        $data['recent_audits']  = $this->Dashboard_model->get_recent_audits($limit, $filters, $offset);
 
         // Ambil data untuk pilihan dropdown
         $data['auditors']       = $this->Dashboard_model->get_all_auditors();
@@ -50,7 +61,7 @@ class Dashboard extends CI_Controller
         $data['stages']         = $this->Dashboard_model->get_all_stages();
         $data['sources']        = $this->Dashboard_model->get_all_sources();
         $data['projects']       = $this->Dashboard_model->get_all_projects();
-        
+
         // Kirim filter aktif kembali ke view
         $data['filters']        = $filters;
 

@@ -70,14 +70,14 @@ class Dashboard_model extends CI_Model
             $this->db->group_start();
             $this->db->like('a.no_invoice', $search);
             $this->db->or_like('a.project_name', $search);
-            
+
             // Subquery untuk mencocokkan nama auditee
             $this->db->or_where("a.id IN (
                 SELECT ad.id_audit FROM auditee ad 
                 JOIN user u ON ad.id_user = u.id 
                 WHERE u.role_name = 'auditee' AND u.name LIKE " . $this->db->escape('%' . $search . '%') . "
             )", NULL, FALSE);
-            
+
             $this->db->group_end();
         }
     }
@@ -105,7 +105,7 @@ class Dashboard_model extends CI_Model
             $this->db->where('ms.urutan', $urutan);
             $this->apply_filters($filters);
             $count = $this->db->count_all_results();
-            
+
             $counts[$key] = $count;
             // Statistik buatan (ontime/late) untuk visualisasi
             $counts[$key . '_ontime'] = round($count * 0.84);
@@ -132,7 +132,7 @@ class Dashboard_model extends CI_Model
     /**
      * Mengambil daftar audit terbaru untuk tabel di dashboard (beserta filter & JOIN auditor PIC)
      */
-    public function get_recent_audits($limit = 10, $filters = [])
+    public function get_recent_audits($limit = 10, $filters = [], $offset = 0)
     {
         $this->db->select('
             a.id,
@@ -152,7 +152,13 @@ class Dashboard_model extends CI_Model
             ms.role_akses as stage_role,
             ms.urutan as stage_urutan,
             u_auditor.name as auditor_pic,
-            (SELECT u.name FROM auditee ad JOIN user u ON ad.id_user = u.id WHERE ad.id_audit = a.id LIMIT 1) as nama_auditee
+            (
+            SELECT u.name
+            FROM auditee ad
+            JOIN user u ON ad.id_user = u.id
+            WHERE ad.id_audit = a.id
+            LIMIT 1
+            ) as nama_auditee
         ');
         $this->db->from('audit a');
         $this->db->join('master_stage ms', 'a.id_stage = ms.id', 'left');
@@ -162,7 +168,7 @@ class Dashboard_model extends CI_Model
 
         $this->db->order_by('a.id', 'DESC');
         if ($limit !== null) {
-            $this->db->limit($limit);
+            $this->db->limit($limit, $offset);
         }
 
         return $this->db->get()->result_array();
@@ -198,10 +204,10 @@ class Dashboard_model extends CI_Model
 
     public function get_all_projects()
     {
-        $this->db->distinct();
-        $this->db->select('project_name');
-        $this->db->where('project_name !=', '');
-        return $this->db->get('audit')->result_array();
+        $this->db->select('a1.project_name, a1.nilai');
+        $this->db->from('audit a1');
+        $this->db->join('(SELECT project_name, MAX(id) as max_id FROM audit WHERE project_name != "" GROUP BY project_name) a2', 'a1.id = a2.max_id');
+        $this->db->order_by('a1.project_name', 'ASC');
+        return $this->db->get()->result_array();
     }
 }
-

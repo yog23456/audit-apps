@@ -52,6 +52,7 @@ class Audit extends MY_Controller
         }
 
         $this->form_validation->set_rules('nilai', 'Nilai', 'required|numeric');
+        // $this->form_validation->set_rules('nilai_proyek', 'Nilai Proyek', 'required|numeric');
 
         if ($this->input->post('deadline') !== null && $this->input->post('deadline') !== '') {
             $this->form_validation->set_rules('deadline', 'Deadline', 'required');
@@ -83,6 +84,11 @@ class Audit extends MY_Controller
                 $nilai = 0;
             }
 
+            // $nilai_proyek = $this->input->post('nilai_proyek');
+            // if (empty($nilai_proyek)) {
+            //     $nilai_proyek = 0;
+            // }
+
             // Kalau auditee di-assign, pakai itu; kalau nggak, default ke auditor yang login
             $id_user_post = $this->input->post('id_user');
             if ($id_user_post !== null && trim((string) $id_user_post) !== '') {
@@ -100,6 +106,7 @@ class Audit extends MY_Controller
                 'kategori'           => $this->input->post('kategori'),
                 'project_name'       => $project_name,
                 'nilai'              => $nilai,
+                // 'nilai_proyek'       => $nilai_proyek,
                 'deadline'           => $deadline,
                 'id_user'            => $id_user,
                 'target_aktual'      => $this->input->post('target_actual') ? $this->input->post('target_actual') : date('Y-m-d'),
