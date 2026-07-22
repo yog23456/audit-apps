@@ -30,9 +30,29 @@ class Dashboard extends CI_Controller
             'role_name' => $this->session->userdata('role_name')
         ];
 
-        $data['summary']        = $this->Dashboard_model->get_summary_cards();
+        // Tangkap parameter filter GET
+        $filters = [
+            'auditor'  => $this->input->get('auditor', TRUE),
+            'kategori' => $this->input->get('kategori', TRUE),
+            'stage'    => $this->input->get('stage', TRUE),
+            'sumber'   => $this->input->get('sumber', TRUE),
+            'search'   => $this->input->get('search', TRUE)
+        ];
+
+        $data['summary']        = $this->Dashboard_model->get_summary_cards($filters);
+        $data['pipeline']       = $this->Dashboard_model->get_pipeline_counts($filters);
         $data['stage_stats']    = $this->Dashboard_model->get_cases_per_stage();
-        $data['recent_audits']  = $this->Dashboard_model->get_recent_audits(5);
+        $data['recent_audits']  = $this->Dashboard_model->get_recent_audits(null, $filters); // Ambil semua data terfilter
+
+        // Ambil data untuk pilihan dropdown
+        $data['auditors']       = $this->Dashboard_model->get_all_auditors();
+        $data['categories']     = $this->Dashboard_model->get_all_categories();
+        $data['stages']         = $this->Dashboard_model->get_all_stages();
+        $data['sources']        = $this->Dashboard_model->get_all_sources();
+        $data['projects']       = $this->Dashboard_model->get_all_projects();
+        
+        // Kirim filter aktif kembali ke view
+        $data['filters']        = $filters;
 
         // Memuat view dashboard beserta header/footer jika ada
         $this->load->view('templates/header', $data);
