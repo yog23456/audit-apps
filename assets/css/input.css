@@ -99,3 +99,47 @@
     @apply text-xs font-semibold text-gray-500 mb-1.5 block;
   }
 }
+
+/* ---------- Custom Success Toast Styles ---------- */
+@keyframes slideInRight {
+  from {
+    transform: translate3d(100%, 0, 0);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(120%, 0, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes shrinkProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.toast-animate-in {
+  animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.toast-animate-out {
+  animation: slideOutRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.toast-progress-bar {
+  animation: shrinkProgress 3000ms linear forwards;
+}

@@ -3,6 +3,7 @@ module.exports = {
   content: [
     './application/views/**/*.php',
     './application/controllers/**/*.php',
+    './assets/js/**/*.js',
   ],
   theme: {
     extend: {

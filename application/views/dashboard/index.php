@@ -236,25 +236,42 @@
                         <td colspan="11" class="p-6 border-b border-gray-200/80">
                             <!-- Container Content Box -->
                             <div class="space-y-6">
-                                
+
                                 <!-- Timeline Tahapan Investigasi Section -->
                                 <div>
                                     <h4 class="text-xs font-bold text-gray-700 mb-4 tracking-tight">Timeline Tahapan Investigasi</h4>
-                                    
+
                                     <!-- Stepper Items Wrapper -->
                                     <div class="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs">
                                         <div class="flex items-center justify-between w-full relative px-2">
-                                            <?php 
-                                            $stages_list = array('Investigasi', 'Investigasi', 'Investigasi', 'Investigasi', 'Investigasi', 'Investigasi', 'Investigasi', 'Investigasi');
-                                            foreach ($stages_list as $i => $st_name): 
-                                                $is_active = ($i === 0); // Active first step in orange
+                                            <?php
+                                            $stages_list = array(
+                                                array('name' => 'Investigasi', 'icon' => 'bi-file-earmark-text'),
+                                                array('name' => 'Review SPV',  'icon' => 'bi-x-circle'),
+                                                array('name' => 'Review Head', 'icon' => 'bi-check-circle'),
+                                                array('name' => 'Auditee',     'icon' => 'bi-chat-square-text'),
+                                                array('name' => 'Telaah',      'icon' => 'bi-search'),
+                                                array('name' => 'Terbit BA',   'icon' => 'bi-person-vcard'),
+                                                array('name' => 'Feedback',    'icon' => 'bi-chat-heart'),
+                                                array('name' => 'Closed',      'icon' => 'bi-list-check'),
+                                            );
+                                            $current_step = 0; // index tahap yang sedang aktif
+                                            foreach ($stages_list as $i => $stage):
+                                                $is_active = ($i === $current_step);
+                                                $is_done   = ($i < $current_step);
                                             ?>
                                                 <div class="flex flex-col items-center z-10">
-                                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-base transition-all <?= $is_active ? 'border-2 border-orange-500 bg-white text-orange-500 shadow-sm' : 'border border-gray-200 bg-white text-gray-400' ?>">
-                                                        <i class="bi bi-file-earmark-text"></i>
+                                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-base transition-all
+                        <?= $is_active
+                                                    ? 'border-2 border-orange-500 bg-white text-orange-500 shadow-sm'
+                                                    : ($is_done
+                                                        ? 'border-2 border-orange-500 bg-orange-500 text-white'
+                                                        : 'border border-gray-200 bg-white text-gray-300') ?>">
+                                                        <i class="bi <?= $stage['icon'] ?>"></i>
                                                     </div>
-                                                    <span class="text-[11px] <?= $is_active ? 'font-semibold text-orange-500' : 'font-medium text-gray-400' ?> mt-2 block text-center">
-                                                        <?= $st_name ?>
+                                                    <span class="text-[11px] mt-2 block text-center whitespace-nowrap
+                        <?= $is_active ? 'font-semibold text-orange-500' : 'font-medium text-gray-400' ?>">
+                                                        <?= $stage['name'] ?>
                                                     </span>
                                                 </div>
 
@@ -263,36 +280,14 @@
                                                 <?php endif; ?>
                                             <?php endforeach; ?>
                                         </div>
+
+                                    </div>
+                                    <div class="flex justify-end mt-4">
+                                        <button type="button" class="btn-open-upload bg-[#005691] hover:bg-[#004475] text-white text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors" data-invoice="<?= htmlspecialchars($row['invoice']) ?>" data-stage="<?= htmlspecialchars($row['stage']) ?>" data-stage-color="<?= htmlspecialchars($row['stage_color']) ?>">
+                                            + Update
+                                        </button>
                                     </div>
                                 </div>
-
-                                <!-- Evidence Section -->
-                                <div>
-                                    <h4 class="text-xs font-bold text-gray-700 mb-2 tracking-tight">Evidence:</h4>
-                                    
-                                    <!-- Uploader Info -->
-                                    <div class="flex items-center gap-2 mb-3">
-                                        <div class="w-8 h-8 rounded-full bg-blue-100 text-[#005691] font-bold text-xs flex items-center justify-center border border-blue-200">
-                                            OR
-                                        </div>
-                                        <span class="text-xs text-gray-600 font-medium">3 Juli, 2026 - 10:00</span>
-                                    </div>
-
-                                    <!-- PDF Attachment Card -->
-                                    <div class="bg-white border border-gray-200 rounded-xl p-3.5 max-w-[280px] shadow-xs flex items-start gap-3 relative hover:border-blue-200 transition-colors">
-                                        <div class="w-9 h-9 rounded-lg bg-blue-50 text-[#005691] flex items-center justify-center text-lg shrink-0 border border-blue-100">
-                                            <i class="bi bi-file-earmark-pdf"></i>
-                                        </div>
-                                        <div class="flex-1 min-w-0">
-                                            <div class="text-xs font-semibold text-gray-800 leading-tight truncate">Dashboard prototype recording.pdf</div>
-                                            <div class="text-[11px] text-gray-400 mt-0.5 font-medium">16 MB</div>
-                                            <div class="text-right mt-2">
-                                                <a href="#" onclick="event.stopPropagation(); alert('Silakan pilih file baru...'); return false;" class="text-xs font-semibold text-[#005691] hover:underline cursor-pointer">Ganti</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
                             </div>
                         </td>
                     </tr>
@@ -326,7 +321,7 @@
 <!-- ============ MODAL CASE MANUAL ============ -->
 <div id="modalCaseManual" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-[560px] w-full p-6 shadow-2xl border border-gray-100 flex flex-col max-h-[94vh] overflow-y-auto">
-        
+
         <!-- Header -->
         <div class="flex items-center justify-between pb-2 mb-2 border-b border-gray-100">
             <h3 class="font-bold text-base text-gray-800">
@@ -338,7 +333,7 @@
         </div>
 
         <form id="formCaseManual" action="<?= site_url('dashboard/case/store') ?>" method="post" class="space-y-4">
-            
+
             <!-- Simulasi Cepat Box -->
             <div class="border border-gray-200/80 rounded-xl p-3 bg-white">
                 <div class="flex items-center gap-1.5 text-[#005691] text-xs font-semibold mb-2.5">
@@ -461,5 +456,93 @@
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- ============ MODAL UPLOAD DOKUMEN ============ -->
+<div id="modalUploadDokumen" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-[560px] w-full shadow-2xl border border-gray-100 flex flex-col overflow-hidden">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <h3 class="font-bold text-sm text-gray-800">
+                Upload Dokumen Investigasi
+            </h3>
+            <button type="button" id="uploadModalCloseX" class="text-gray-400 hover:text-gray-600 text-lg p-1 focus:outline-none cursor-pointer">
+                <i class="bi bi-x-lg text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6 space-y-4">
+            <!-- Case & Stage Row -->
+            <div class="flex items-center text-xs text-gray-600">
+                <span class="font-medium">Case:</span>
+                <span id="uploadModalBadge" class="text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full ml-2">Investigasi</span>
+                <span id="uploadModalInvoice" class="font-bold text-gray-800 ml-2">AUD-2026-004</span>
+            </div>
+
+            <!-- Warning Alert Block -->
+            <div id="uploadModalAlert" class="bg-orange-50/50 border border-orange-100 rounded-xl p-3.5 text-xs text-orange-600 leading-relaxed">
+                Upload dokumen olahan data investigasi. Setelah submit diteruskan ke SPV untuk direview.
+            </div>
+
+            <!-- Dotted Divider -->
+            <div class="border-t border-dashed border-gray-200"></div>
+
+            <!-- Drag & Drop / Selection Area -->
+            <div id="uploadDropzone" class="border-2 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50/10 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50/30">
+                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                    <i class="bi bi-cloud-arrow-up text-gray-500 text-lg"></i>
+                </div>
+                <span class="text-xs text-gray-500 text-center">
+                    <span class="text-[#005691] font-semibold hover:underline">Klik untuk mengunggah</span> atau seret dan lepas
+                </span>
+                <span class="text-[10px] text-gray-400 mt-1 block">PDF, PNG, JPG, atau DOCX (maks. 10MB)</span>
+                <input type="file" id="fileUploadInput" class="hidden" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx">
+            </div>
+
+            <!-- File Uploaded Card (Hidden by default) -->
+            <div id="fileStatusCard" class="hidden border border-blue-200 rounded-xl p-4 bg-blue-50/5 flex flex-col space-y-3">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-[#005691] flex items-center justify-center shrink-0">
+                        <i id="fileIcon" class="bi bi-file-earmark-pdf-fill text-lg"></i>
+                    </div>
+                    <div class="flex-1 min-w-0 ml-3">
+                        <div id="fileName" class="font-semibold text-gray-800 text-xs truncate">Tech design requirements.pdf</div>
+                        <div id="fileSize" class="text-[10px] text-gray-400">200 KB</div>
+                    </div>
+                    <i id="fileCheckIcon" class="bi bi-check-circle-fill text-[#005691] text-base ml-2 shrink-0 opacity-0 transition-opacity duration-300"></i>
+                </div>
+                
+                <!-- Progress bar -->
+                <div class="flex items-center gap-3">
+                    <div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div id="uploadProgressBar" class="h-full bg-[#005691] rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <span id="uploadProgressPercent" class="text-[10px] font-semibold text-gray-500 shrink-0">0%</span>
+                </div>
+
+                <!-- Card Actions -->
+                <div class="flex items-center justify-end gap-3 text-[11px] font-semibold pt-1">
+                    <button type="button" id="removeFileBtn" class="text-red-500 hover:text-red-600 flex items-center gap-1 cursor-pointer">
+                        <i class="bi bi-trash"></i> Hapus
+                    </button>
+                    <button type="button" id="changeFileBtn" class="text-[#005691] hover:text-[#004475] flex items-center gap-1 cursor-pointer">
+                        <i class="bi bi-arrow-repeat"></i> Ganti
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+            <button type="button" id="uploadModalCancel" class="border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold px-5 py-2 rounded-xl text-xs transition-colors cursor-pointer">
+                Batal
+            </button>
+            <button type="button" id="submitUploadBtn" class="bg-[#a5c3db] pointer-events-none text-white font-semibold px-5 py-2 rounded-xl text-xs transition-all shadow-sm">
+                Konfirmasi & Submit
+            </button>
+        </div>
     </div>
 </div>
