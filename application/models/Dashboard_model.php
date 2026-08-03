@@ -1,89 +1,213 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
 class Dashboard_model extends CI_Model
 {
+
     public function __construct()
     {
         parent::__construct();
+        $this->load->database();
     }
 
-    public function get_pipeline_summary()
+    /**
+     * Mengambil ringkasan statistik (KPI Cards)
+     */
+    public function get_summary_cards($filters = [])
     {
-        return array(
-            array('role' => 'Auditor',    'label' => 'Investigasi', 'icon' => 'person-vcard',        'total' => 25, 'ontime' => 16, 'late' => 2),
-            array('role' => 'SPV Audit',  'label' => 'Review SPV',  'icon' => 'arrow-repeat',         'total' => 25, 'ontime' => 16, 'late' => 2),
-            array('role' => 'Head Audit', 'label' => 'Review Head', 'icon' => 'check-circle',        'total' => 25, 'ontime' => 16, 'late' => 2),
-            array('role' => 'Auditee',    'label' => 'Konfirmasi',  'icon' => 'chat-left-dots',      'total' => 25, 'ontime' => 16, 'late' => 2),
-            array('role' => 'Auditor',    'label' => 'Telaah',      'icon' => 'search',              'total' => 25, 'ontime' => 16, 'late' => 2),
-            array('role' => 'SPV Audit',  'label' => 'Terbit BA',   'icon' => 'file-earmark-check',  'total' => 25, 'ontime' => 16, 'late' => 2),
-            array('role' => 'Auditee',    'label' => 'Feedback',    'icon' => 'at',                  'total' => 25, 'ontime' => 16, 'late' => 2),
-            array('role' => 'Selesai',    'label' => 'Closed',      'icon' => 'card-checklist',      'total' => 25, 'ontime' => 16, 'late' => 2),
-        );
+        // Ambil ID stage terakhir (urutan ke-8 / final) dari master_stage
+        $final_stage = $this->db->get_where('master_stage', ['urutan' => 8])->row();
+        $final_stage_id = $final_stage ? $final_stage->id : 8;
+
+        // Base query untuk total_case & total_nilai dengan filter
+        $this->db->from('audit a');
+        $this->apply_filters($filters);
+        $total_case = $this->db->count_all_results();
+
+        $this->db->select_sum('a.nilai');
+        $this->db->from('audit a');
+        $this->apply_filters($filters);
+        $total_nilai = $this->db->get()->row()->nilai ?? 0;
+
+        $this->db->from('audit a');
+        $this->db->where('a.id_stage', $final_stage_id);
+        $this->apply_filters($filters);
+        $completed = $this->db->count_all_results();
+
+        $this->db->from('audit a');
+        $this->db->join('master_stage ms', 'a.id_stage = ms.id', 'left');
+        $this->db->where('ms.urutan <', 8);
+        $this->apply_filters($filters);
+        $in_progress = $this->db->count_all_results();
+
+        return [
+            'total_case'    => $total_case,
+            'total_nilai'   => $total_nilai,
+            'completed'     => $completed,
+            'in_progress'   => $in_progress
+        ];
     }
 
-    public function get_case_list($filters = array(), $limit = 7, $offset = 0)
+    /**
+     * Helper privat untuk menerapkan query filter pencarian & dropdown
+     */
+    private function apply_filters($filters)
     {
-        return array(
-            array(
-                'invoice' => 'AUD-2026-001', 'sumber' => 'ECES', 'kategori' => 'Piutang ECES',
-                'proyek' => 'Arjawinangun 1 T3', 'auditee' => 'Sukendra', 'nilai' => 10960000,
-                'stage' => 'Review SPV', 'stage_color' => 'bg-[#004b87]', 'deadline' => '-',
-                'progress' => 10, 'progress_color' => 'bg-red-500 text-red-500',
-                'auditor_pic' => 'Budi Santoso', 'target_actual' => '2026-04-21', 'expanded' => true
-            ),
-            array(
-                'invoice' => 'AUD-2026-002', 'sumber' => 'ECES', 'kategori' => 'Piutang ECES',
-                'proyek' => 'Arjawinangun By Pass', 'auditee' => 'Sukendra', 'nilai' => 10288400,
-                'stage' => 'Telaah', 'stage_color' => 'bg-[#10b981]', 'deadline' => '-',
-                'progress' => 80, 'progress_color' => 'bg-[#005691] text-[#005691]',
-                'auditor_pic' => 'Budi Santoso', 'target_actual' => '2026-04-21', 'expanded' => false
-            ),
-            array(
-                'invoice' => 'AUD-2026-003', 'sumber' => 'ECES', 'kategori' => 'Piutang ECES',
-                'proyek' => 'RN Gegunung', 'auditee' => 'Trisno', 'nilai' => 4834000,
-                'stage' => 'Review Head Unit', 'stage_color' => 'bg-[#5b3fa6]', 'deadline' => '-',
-                'progress' => 60, 'progress_color' => 'bg-[#f97316] text-[#f97316]',
-                'auditor_pic' => 'Budi Santoso', 'target_actual' => '2026-04-21', 'expanded' => false
-            ),
-            array(
-                'invoice' => 'AUD-2026-004', 'sumber' => 'ECES', 'kategori' => 'Piutang ECES',
-                'proyek' => 'RN Ningrat', 'auditee' => 'Karya Wiguna', 'nilai' => 6350000,
-                'stage' => 'Konfirmasi Auditee', 'stage_color' => 'bg-[#f97316]', 'deadline' => '-',
-                'progress' => 60, 'progress_color' => 'bg-[#f97316] text-[#f97316]',
-                'auditor_pic' => 'Budi Santoso', 'target_actual' => '2026-04-21', 'expanded' => false
-            ),
-            array(
-                'invoice' => 'AUD-2026-005', 'sumber' => 'ECES', 'kategori' => 'Piutang ECES',
-                'proyek' => 'RN Pejambon', 'auditee' => 'Ridwanuddin', 'nilai' => 10960000,
-                'stage' => 'Terbit BA', 'stage_color' => 'bg-[#2563eb]', 'deadline' => '-',
-                'progress' => 80, 'progress_color' => 'bg-[#005691] text-[#005691]',
-                'auditor_pic' => 'Budi Santoso', 'target_actual' => '2026-04-21', 'expanded' => false
-            ),
-            array(
-                'invoice' => 'AUD-2026-005', 'sumber' => 'ECES', 'kategori' => 'Piutang ECES',
-                'proyek' => 'Arjawinangun By Pass', 'auditee' => 'Sukendra', 'nilai' => 0,
-                'stage' => 'Closed', 'stage_color' => 'bg-[#9ca3af]', 'deadline' => '-',
-                'progress' => 100, 'progress_color' => 'bg-[#005691] text-[#005691]',
-                'auditor_pic' => 'Budi Santoso', 'target_actual' => '2026-04-21', 'expanded' => false
-            ),
-            array(
-                'invoice' => 'AUD-2026-005', 'sumber' => 'ECES', 'kategori' => 'Piutang ECES',
-                'proyek' => 'Trusmiland 5', 'auditee' => 'CV Berlian Alam', 'nilai' => 1730000,
-                'stage' => 'Investigasi', 'stage_color' => 'bg-[#f59e0b]', 'deadline' => '-',
-                'progress' => 60, 'progress_color' => 'bg-red-500 text-red-500',
-                'auditor_pic' => 'Budi Santoso', 'target_actual' => '2026-04-21', 'expanded' => false
-            ),
-        );
+        if (!empty($filters['auditor'])) {
+            $this->db->where('a.id_user', $filters['auditor']);
+        }
+        if (!empty($filters['kategori'])) {
+            $this->db->where('a.kategori', $filters['kategori']);
+        }
+        if (!empty($filters['stage'])) {
+            $this->db->where('a.id_stage', $filters['stage']);
+        }
+        if (!empty($filters['sumber'])) {
+            $this->db->where('a.sumber', $filters['sumber']);
+        }
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $this->db->group_start();
+            $this->db->like('a.no_invoice', $search);
+            $this->db->or_like('a.project_name', $search);
+
+            // Subquery untuk mencocokkan nama auditee
+            $this->db->or_where("a.id IN (
+                SELECT ad.id_audit FROM auditee ad 
+                JOIN user u ON ad.id_user = u.id 
+                WHERE u.role_name = 'auditee' AND u.name LIKE " . $this->db->escape('%' . $search . '%') . "
+            )", NULL, FALSE);
+
+            $this->db->group_end();
+        }
     }
 
-    public function count_case_list($filters = array())
+    /**
+     * Menghitung total kasus per stage secara dinamis berdasarkan filter
+     */
+    public function get_pipeline_counts($filters = [])
     {
-        return 24;
+        $stages = [
+            'investigasi' => 1,
+            'review_spv'  => 2,
+            'review_head' => 3,
+            'konfirmasi'  => 4,
+            'telaah'      => 5,
+            'terbit_ba'   => 6,
+            'feedback'    => 7,
+            'closed'      => 8
+        ];
+
+        $counts = [];
+        foreach ($stages as $key => $urutan) {
+            $this->db->from('audit a');
+            $this->db->join('master_stage ms', 'a.id_stage = ms.id', 'left');
+            $this->db->where('ms.urutan', $urutan);
+            $this->apply_filters($filters);
+            $count = $this->db->count_all_results();
+
+            $counts[$key] = $count;
+            // Statistik buatan (ontime/late) untuk visualisasi
+            $counts[$key . '_ontime'] = round($count * 0.84);
+            $counts[$key . '_late'] = $count - $counts[$key . '_ontime'];
+        }
+
+        return $counts;
     }
 
-    public function insert_case_manual($data)
+    /**
+     * Jumlah audit yang sedang berjalan per Stage
+     */
+    public function get_cases_per_stage()
     {
-        return true;
+        $this->db->select('ms.id, ms.nama_stage as stage_name, ms.progress_value, ms.urutan, COUNT(a.id) as total_case');
+        $this->db->from('master_stage ms');
+        $this->db->join('audit a', 'ms.id = a.id_stage', 'left');
+        $this->db->group_by('ms.id, ms.nama_stage, ms.progress_value, ms.urutan');
+        $this->db->order_by('ms.urutan', 'ASC');
+
+        return $this->db->get()->result_array();
+    }
+
+    /**
+     * Mengambil daftar audit terbaru untuk tabel di dashboard (beserta filter & JOIN auditor PIC)
+     */
+    public function get_recent_audits($limit = 10, $filters = [], $offset = 0)
+    {
+        $this->db->select('
+            a.id,
+            a.no_invoice,
+            a.sumber,
+            a.kategori,
+            a.project_name,
+            a.nilai,
+            a.id_stage,
+            a.deadline,
+            a.progress,
+            a.target_aktual,
+            a.created_at,
+            a.updated_at,
+            ms.nama_stage as stage_name, 
+            ms.progress_value, 
+            ms.role_akses as stage_role,
+            ms.urutan as stage_urutan,
+            u_auditor.name as auditor_pic,
+            (
+            SELECT u.name
+            FROM auditee ad
+            JOIN user u ON ad.id_user = u.id
+            WHERE ad.id_audit = a.id
+            LIMIT 1
+            ) as nama_auditee
+        ');
+        $this->db->from('audit a');
+        $this->db->join('master_stage ms', 'a.id_stage = ms.id', 'left');
+        $this->db->join('user u_auditor', 'a.id_user = u_auditor.id AND u_auditor.role_name = "auditor"', 'left');
+
+        $this->apply_filters($filters);
+
+        $this->db->order_by('a.id', 'DESC');
+        if ($limit !== null) {
+            $this->db->limit($limit, $offset);
+        }
+
+        return $this->db->get()->result_array();
+    }
+
+    // Helper options untuk Dropdowns
+    public function get_all_auditors()
+    {
+        return $this->db->get_where('user', ['role_name' => 'auditor'])->result();
+    }
+
+    public function get_all_categories()
+    {
+        $this->db->distinct();
+        $this->db->select('kategori');
+        $this->db->where('kategori !=', '');
+        return $this->db->get('audit')->result_array();
+    }
+
+    public function get_all_stages()
+    {
+        $this->db->order_by('urutan', 'ASC');
+        return $this->db->get('master_stage')->result();
+    }
+
+    public function get_all_sources()
+    {
+        $this->db->distinct();
+        $this->db->select('sumber');
+        $this->db->where('sumber !=', '');
+        return $this->db->get('audit')->result_array();
+    }
+
+    public function get_all_projects()
+    {
+        $this->db->select('a1.project_name, a1.nilai');
+        $this->db->from('audit a1');
+        $this->db->join('(SELECT project_name, MAX(id) as max_id FROM audit WHERE project_name != "" GROUP BY project_name) a2', 'a1.id = a2.max_id');
+        $this->db->order_by('a1.project_name', 'ASC');
+        return $this->db->get()->result_array();
     }
 }

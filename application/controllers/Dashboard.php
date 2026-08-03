@@ -1,112 +1,406 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
+#[\AllowDynamicProperties]
 class Dashboard extends CI_Controller
 {
     public function __construct()
     {
         parent::__construct();
-        $this->load->model('Dashboard_model');
-        $this->load->library('pagination');
+
+        $this->load->library('session');
         $this->load->helper(array('url', 'dashboard'));
+        $this->load->model('Dashboard_model');
+
+        // Proteksi halaman dashboard
+        if (!$this->session->userdata('logged_in')) {
+            $this->session->set_flashdata(
+                'error',
+                'Silakan login terlebih dahulu!'
+            );
+
+            redirect('auth');
+        }
     }
 
     public function index()
     {
-        // --- Filter dari query string ---
-        $filters = array(
-            'auditor'  => $this->input->get('auditor'),
-            'kategori' => $this->input->get('kategori'),
-            'stage'    => $this->input->get('stage'),
-            'sumber'   => $this->input->get('sumber'),
-            'q'        => $this->input->get('q'),
+        /*
+        |--------------------------------------------------------------------------
+        | DATA USER LOGIN
+        |--------------------------------------------------------------------------
+        */
+        $data['user'] = array(
+            'name'      => $this->session->userdata('name'),
+            'username'  => $this->session->userdata('username'),
+            'role_name' => $this->session->userdata('role_name')
         );
 
-        // --- Pagination ---
+
+        /*
+        |--------------------------------------------------------------------------
+        | FILTER
+        |--------------------------------------------------------------------------
+        */
+        $filters = array(
+            'auditor'  => $this->input->get('auditor', TRUE),
+            'kategori' => $this->input->get('kategori', TRUE),
+            'stage'    => $this->input->get('stage', TRUE),
+            'sumber'   => $this->input->get('sumber', TRUE),
+            'search'   => $this->input->get('q', TRUE)
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PAGINATION
+        |--------------------------------------------------------------------------
+        */
         $per_page = 7;
+
         $page = (int) $this->input->get('page');
-        $page = $page > 0 ? $page : 1;
-        $offset = ($page - 1) * $per_page;
 
-        $total_case = $this->Dashboard_model->count_case_list($filters);
-
-        $config['base_url']             = site_url('dashboard');
-        $config['total_rows']           = $total_case;
-        $config['per_page']             = $per_page;
-        $config['page_query_string']    = TRUE;
-        $config['query_string_segment'] = 'page';
-        $config['num_links']            = 3;
-        $config['full_tag_open']        = '<ul class="pagination pagination-sm mb-0">';
-        $config['full_tag_close']       = '</ul>';
-        $config['attributes']           = array('class' => 'page-link');
-        $config['cur_tag_open']         = '<li class="page-item active"><span class="page-link">';
-        $config['cur_tag_close']        = '</span></li>';
-        $config['num_tag_open']         = '<li class="page-item">';
-        $config['num_tag_close']        = '</li>';
-        $config['prev_tag_open']        = '<li class="page-item">';
-        $config['prev_tag_close']       = '</li>';
-        $config['next_tag_open']        = '<li class="page-item">';
-        $config['next_tag_close']       = '</li>';
-        $config['first_tag_open']       = '<li class="page-item">';
-        $config['first_tag_close']      = '</li>';
-        $config['last_tag_open']        = '<li class="page-item">';
-        $config['last_tag_close']       = '</li>';
-        $this->pagination->initialize($config);
-
-        $data['page_title']       = 'Audit Finance Dashboard';
-        $data['page_subtitle']    = 'Temuan Anomali & Rekap Piutang';
-        $data['pipeline_summary'] = $this->Dashboard_model->get_pipeline_summary();
-        $data['case_list']        = $this->Dashboard_model->get_case_list($filters, $per_page, $offset);
-        $data['total_case']       = $total_case;
-        $data['pagination_links'] = $this->pagination->create_links();
-        $data['filters']          = $filters;
-
-        // Layout project ini pakai pola: layouts/template.php butuh $content = nama view
-        $data['content'] = 'dashboard/index';
-        $this->load->view('layouts/template', $data);
-    }
-
-    /**
-     * Endpoint AJAX untuk reload baris tabel sesuai filter tanpa reload halaman.
-     */
-    public function filter_ajax()
-    {
-        $filters = array(
-            'auditor'  => $this->input->post('auditor'),
-            'kategori' => $this->input->post('kategori'),
-            'stage'    => $this->input->post('stage'),
-            'sumber'   => $this->input->post('sumber'),
-            'q'        => $this->input->post('q'),
-        );
-
-        $case_list = $this->Dashboard_model->get_case_list($filters, 7, 0);
-
-        $this->load->view('dashboard/_table_rows', array('case_list' => $case_list));
-    }
-
-    /**
-     * Simpan case manual baru dari modal "+ Case Manual".
-     */
-    public function store_case_manual()
-    {
-        if ($this->input->method() !== 'post') {
-            show_404();
+        if ($page < 1) {
+            $page = 1;
         }
 
-        $data = array(
-            'invoice'       => $this->input->post('invoice', TRUE),
-            'sumber'        => $this->input->post('sumber', TRUE),
-            'kategori'      => $this->input->post('kategori', TRUE),
-            'proyek'        => $this->input->post('proyek', TRUE),
-            'auditee'       => $this->input->post('auditee', TRUE),
-            'nilai'         => $this->input->post('nilai', TRUE),
-            'stage'         => $this->input->post('stage', TRUE),
-            'auditor_pic'   => $this->input->post('auditor_pic', TRUE),
-            'target_actual' => $this->input->post('target_actual', TRUE),
+        $offset = ($page - 1) * $per_page;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | AMBIL DATA DARI MODEL BACKEND
+        |--------------------------------------------------------------------------
+        */
+        $summary = $this->Dashboard_model->get_summary_cards($filters);
+
+        $pipeline = $this->Dashboard_model->get_pipeline_counts($filters);
+
+        $stages = $this->Dashboard_model->get_cases_per_stage();
+
+        $recent_audits = $this->Dashboard_model->get_recent_audits(
+            $per_page,
+            $filters,
+            $offset
         );
 
-        $ok = $this->Dashboard_model->insert_case_manual($data);
 
-        echo json_encode(array('status' => $ok ? 'success' : 'error'));
+        /*
+        |--------------------------------------------------------------------------
+        | JUDUL UNTUK VIEW FRONTEND
+        |--------------------------------------------------------------------------
+        */
+        $data['page_title'] = 'Audit Finance Dashboard';
+
+        $data['page_subtitle'] = 'Temuan Anomali & Rekap Piutang';
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PIPELINE SUMMARY
+        | Mengubah data backend agar sesuai format frontend
+        |--------------------------------------------------------------------------
+        */
+        $data['pipeline_summary'] = array();
+
+        $icons = array(
+            'bi-file-earmark-text',
+            'bi-x-circle',
+            'bi-check-circle',
+            'bi-chat-square-text',
+            'bi-search',
+            'bi-person-vcard',
+            'bi-chat-heart',
+            'bi-list-check'
+        );
+
+        foreach ($stages as $index => $stage) {
+
+            $stage_key = array(
+                'investigasi',
+                'review_spv',
+                'review_head',
+                'konfirmasi',
+                'telaah',
+                'terbit_ba',
+                'feedback',
+                'closed'
+            );
+
+            $key = isset($stage_key[$index])
+                ? $stage_key[$index]
+                : null;
+
+            $total = $key && isset($pipeline[$key])
+                ? $pipeline[$key]
+                : 0;
+
+            $ontime = $key && isset($pipeline[$key . '_ontime'])
+                ? $pipeline[$key . '_ontime']
+                : 0;
+
+            $late = $key && isset($pipeline[$key . '_late'])
+                ? $pipeline[$key . '_late']
+                : 0;
+
+            $data['pipeline_summary'][] = array(
+                'role'    => isset($stage['stage_role'])
+                    ? $stage['stage_role']
+                    : '',
+
+                'label'   => isset($stage['stage_name'])
+                    ? $stage['stage_name']
+                    : '',
+
+                'icon'    => isset($icons[$index])
+                    ? str_replace('bi-', '', $icons[$index])
+                    : 'circle',
+
+                'total'   => $total,
+                'ontime'  => $ontime,
+                'late'    => $late
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CASE LIST
+        | Mengubah nama field backend → nama field frontend
+        |--------------------------------------------------------------------------
+        */
+        $data['case_list'] = array();
+
+        foreach ($recent_audits as $row) {
+
+            $progress = isset($row['progress'])
+                ? (int) $row['progress']
+                : 0;
+
+
+            /*
+            | Warna stage
+            */
+            $stage_color = 'bg-gray-500';
+
+            switch (strtolower($row['stage_name'] ?? '')) {
+
+                case 'investigasi':
+                    $stage_color = 'bg-orange-500';
+                    break;
+
+                case 'review spv':
+                    $stage_color = 'bg-yellow-500';
+                    break;
+
+                case 'review head':
+                case 'review head unit':
+                    $stage_color = 'bg-blue-500';
+                    break;
+
+                case 'konfirmasi':
+                case 'konfirmasi auditee':
+                    $stage_color = 'bg-purple-500';
+                    break;
+
+                case 'telaah':
+                    $stage_color = 'bg-indigo-500';
+                    break;
+
+                case 'terbit ba':
+                    $stage_color = 'bg-cyan-600';
+                    break;
+
+                case 'feedback':
+                    $stage_color = 'bg-teal-500';
+                    break;
+
+                case 'closed':
+                    $stage_color = 'bg-green-600';
+                    break;
+            }
+
+
+            /*
+            | Warna progress
+            */
+            if ($progress >= 75) {
+
+                $progress_color =
+                    'bg-green-500 text-green-600';
+
+            } elseif ($progress >= 40) {
+
+                $progress_color =
+                    'bg-blue-500 text-blue-600';
+
+            } else {
+
+                $progress_color =
+                    'bg-orange-500 text-orange-600';
+            }
+
+
+            /*
+            | Format row agar cocok dengan frontend
+            */
+            $data['case_list'][] = array(
+
+                'invoice' =>
+                    $row['no_invoice'] ?? '-',
+
+                'sumber' =>
+                    $row['sumber'] ?? '-',
+
+                'kategori' =>
+                    $row['kategori'] ?? '-',
+
+                'proyek' =>
+                    $row['project_name'] ?? '-',
+
+                'auditee' =>
+                    $row['nama_auditee'] ?? '-',
+
+                'nilai' =>
+                    $row['nilai'] ?? 0,
+
+                'stage' =>
+                    $row['stage_name'] ?? '-',
+
+                'stage_color' =>
+                    $stage_color,
+
+                'deadline' =>
+                    $row['deadline'] ?? '-',
+
+                'progress' =>
+                    $progress,
+
+                'progress_color' =>
+                    $progress_color,
+
+                'auditor_pic' =>
+                    $row['auditor_pic'] ?? '-',
+
+                'target_actual' =>
+                    $row['target_aktual'] ?? '-',
+
+                'expanded' => false
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOTAL CASE
+        |--------------------------------------------------------------------------
+        */
+        $data['total_case'] =
+            isset($summary['total_case'])
+                ? $summary['total_case']
+                : 0;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FILTER UNTUK VIEW
+        |--------------------------------------------------------------------------
+        |
+        | Frontend menggunakan $filters['q']
+        | sedangkan model backend menggunakan "search".
+        |
+        */
+        $data['filters'] = array(
+            'auditor' =>
+                $filters['auditor'],
+
+            'kategori' =>
+                $filters['kategori'],
+
+            'stage' =>
+                $filters['stage'],
+
+            'sumber' =>
+                $filters['sumber'],
+
+            'q' =>
+                $filters['search']
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | DATA DROPDOWN
+        |--------------------------------------------------------------------------
+        */
+        $data['auditors'] =
+            $this->Dashboard_model->get_all_auditors();
+
+        $data['categories'] =
+            $this->Dashboard_model->get_all_categories();
+
+        $data['stages'] =
+            $this->Dashboard_model->get_all_stages();
+
+        $data['sources'] =
+            $this->Dashboard_model->get_all_sources();
+
+        $data['projects'] =
+            $this->Dashboard_model->get_all_projects();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOAD LAYOUT FRONTEND
+        |--------------------------------------------------------------------------
+        */
+        $data['content'] = 'dashboard/index';
+
+        $this->load->view(
+            'layouts/template',
+            $data
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | API DASHBOARD
+    |--------------------------------------------------------------------------
+    */
+    public function get_stats_json()
+    {
+        $response = array(
+            'status' => true,
+
+            'data' => array(
+
+                'summary' =>
+                    $this->Dashboard_model
+                        ->get_summary_cards(),
+
+                'stage_stats' =>
+                    $this->Dashboard_model
+                        ->get_cases_per_stage(),
+
+                'recent_audits' =>
+                    $this->Dashboard_model
+                        ->get_recent_audits(5)
+            )
+        );
+
+        $this->output
+            ->set_status_header(200)
+            ->set_content_type(
+                'application/json',
+                'utf-8'
+            )
+            ->set_output(
+                json_encode(
+                    $response,
+                    JSON_PRETTY_PRINT |
+                    JSON_UNESCAPED_UNICODE
+                )
+            );
     }
 }
