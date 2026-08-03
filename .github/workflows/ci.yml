@@ -1,0 +1,26 @@
+name: CI Pipeline
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Setup ci-phpunit-test
+        run: php vendor/kenjis/ci-phpunit-test/install.php
+
+      - name: Run tests
+        run: |
+          cd application/tests
+          ../../vendor/bin/phpunit --verbose
