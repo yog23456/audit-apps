@@ -54,13 +54,21 @@ class Dashboard_model extends CI_Model
     private function apply_filters($filters)
     {
         if (!empty($filters['auditor'])) {
-            $this->db->where('a.id_user', $filters['auditor']);
+            if (is_numeric($filters['auditor'])) {
+                $this->db->where('a.id_user', (int)$filters['auditor']);
+            } else {
+                $this->db->where("a.id_user IN (SELECT id FROM user WHERE name = " . $this->db->escape($filters['auditor']) . ")", NULL, FALSE);
+            }
         }
         if (!empty($filters['kategori'])) {
             $this->db->where('a.kategori', $filters['kategori']);
         }
         if (!empty($filters['stage'])) {
-            $this->db->where('a.id_stage', $filters['stage']);
+            if (is_numeric($filters['stage'])) {
+                $this->db->where('a.id_stage', (int)$filters['stage']);
+            } else {
+                $this->db->where("a.id_stage IN (SELECT id FROM master_stage WHERE nama_stage = " . $this->db->escape($filters['stage']) . ")", NULL, FALSE);
+            }
         }
         if (!empty($filters['sumber'])) {
             $this->db->where('a.sumber', $filters['sumber']);

@@ -162,20 +162,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: formData,
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
-                .then(function (res) { return res.json(); })
+                .then(function (res) {
+                    if (!res.ok) {
+                        throw new Error('Server HTTP status: ' + res.status);
+                    }
+                    return res.json();
+                })
                 .then(function (json) {
                     if (json.status === 'success') {
                         closeModal();
-                        showToastAfterReload('Registrasi Berhasil', 'Case baru berhasil didaftarkan ke tracking.');
+                        showToastAfterReload('Registrasi Berhasil', json.message || 'Case baru berhasil didaftarkan ke tracking.');
                     } else {
-                        alert('Gagal menyimpan case. Silakan coba lagi.');
+                        alert('Gagal menyimpan case: ' + (json.message || 'Silakan periksa kembali inputan Anda.'));
                     }
                 })
-                .catch(function () {
-                    closeModal();
-                    var judulVal = document.getElementById('inputJudulCase') ? document.getElementById('inputJudulCase').value : '';
-                    var displayMsg = judulVal ? 'Case "' + judulVal + '" berhasil didaftarkan ke tracking.' : 'Case manual berhasil didaftarkan ke tracking.';
-                    showToastAfterReload('Registrasi Berhasil', displayMsg);
+                .catch(function (err) {
+                    console.error('Error submit case:', err);
+                    // Fallback to normal form submit if fetch/json fails
+                    formCaseManual.submit();
                 });
         });
     }

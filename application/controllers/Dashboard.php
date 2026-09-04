@@ -10,7 +10,7 @@ class Dashboard extends CI_Controller
 
         $this->load->library('session');
         $this->load->helper(array('url', 'dashboard'));
-        $this->load->model('Dashboard_model');
+        $this->load->model(array('Dashboard_model', 'Audit_model'));
 
         // Proteksi halaman dashboard
         if (!$this->session->userdata('logged_in')) {
@@ -300,7 +300,9 @@ class Dashboard extends CI_Controller
                 ? $summary['total_case']
                 : 0;
 
-
+        $data['current_page'] = $page;
+        $data['per_page']     = $per_page;
+        $data['total_pages']  = ($data['total_case'] > 0) ? (int) ceil($data['total_case'] / $per_page) : 1;
         /*
         |--------------------------------------------------------------------------
         | FILTER UNTUK VIEW
@@ -402,5 +404,90 @@ class Dashboard extends CI_Controller
                     JSON_UNESCAPED_UNICODE
                 )
             );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | SIMPAN CASE MANUAL (AJAX & POST)
+    |--------------------------------------------------------------------------
+    */
+    public function store_case_manual()
+    {
+        $this->load->library('form_validation');
+
+        $this->form_validation->set_rules('sumber', 'Sumber Informasi', 'required');
+        $this->form_validation->set_rules('kategori', 'Kategori Case', 'required');
+
+        $project_name = $this->input->post('project_name');
+        if (empty($project_name)) {
+            $project_name = $this->input->post('proyek');
+        }
+        if (empty($project_name)) {
+            $project_name = 'Umum';
+        }
+
+        $judul_case = $this->input->post('judul_case');
+        if (empty($judul_case)) {
+            $judul_case = $project_name;
+        }
+
+        $target_actual = $this->input->post('target_actual');
+        if (empty($target_actual)) {
+            $target_actual = date('Y-m-d', strtotime('+14 days'));
+        }
+
+        $first_stage = $this->db->get_where('master_stage', ['urutan' => 1])->row();
+        $no_invoice  = $this->Audit_model->generate_next_invoice();
+
+        $auditor_pic = $this->input->post('auditor_pic');
+        $id_user = $this->session->userdata('id_user');
+        if (!empty($auditor_pic)) {
+            $user_match = $this->db->get_where('user', ['name' => $auditor_pic])->row();
+            if ($user_match) {
+                $id_user = $user_match->id;
+            }
+        }
+        if (empty($id_user)) {
+            $id_user = 1;
+        }
+
+        $data = [
+            'no_invoice'         => $no_invoice,
+            'judul_case'         => $judul_case,
+            'deskripsi'          => $this->input->post('deskripsi', TRUE),
+            'catatan_head_audit' => $this->input->post('catatan_head_audit', TRUE),
+            'sumber'             => $this->input->post('sumber', TRUE),
+            'kategori'           => $this->input->post('kategori', TRUE),
+            'project_name'       => $project_name,
+            'nilai'              => (float) $this->input->post('nilai'),
+            'deadline'           => $target_actual,
+            'id_user'            => $id_user,
+            'target_aktual'      => $target_actual,
+            'id_stage'           => $first_stage ? $first_stage->id : 1,
+            'progress'           => $first_stage ? $first_stage->progress_value : 15,
+            'created_at'         => date('Y-m-d H:i:s'),
+            'updated_at'         => date('Y-m-d H:i:s')
+        ];
+
+        $insert_id = $this->Audit_model->insert_audit($data);
+
+        $is_ajax = $this->input->is_ajax_request() ||
+                   ($this->input->get_request_header('X-Requested-With') === 'XMLHttpRequest');
+
+        if ($is_ajax) {
+            $this->output
+                ->set_status_header(200)
+                ->set_content_type('application/json', 'utf-8')
+                ->set_output(json_encode([
+                    'status'     => 'success',
+                    'message'    => 'Case baru berhasil didaftarkan ke tracking dengan nomor ' . $no_invoice,
+                    'id'         => $insert_id,
+                    'no_invoice' => $no_invoice
+                ]));
+            return;
+        }
+
+        $this->session->set_flashdata('success', 'Kasus Audit ' . $no_invoice . ' berhasil ditambahkan!');
+        redirect('dashboard');
     }
 }

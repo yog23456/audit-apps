@@ -69,7 +69,13 @@
         <div class="relative">
             <select name="auditor" class="bg-white border border-gray-200 rounded-full px-4 py-2 pr-8 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#005691] appearance-none cursor-pointer">
                 <option value="">Semua Auditor</option>
-                <option value="Budi Santoso" <?= ($filters['auditor'] == 'Budi Santoso') ? 'selected' : '' ?>>Budi Santoso</option>
+                <?php if (!empty($auditors)): ?>
+                    <?php foreach ($auditors as $aud): ?>
+                        <option value="<?= htmlspecialchars($aud->name) ?>" <?= ($filters['auditor'] == $aud->name) ? 'selected' : '' ?>><?= htmlspecialchars($aud->name) ?></option>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <option value="Budi Santoso" <?= ($filters['auditor'] == 'Budi Santoso') ? 'selected' : '' ?>>Budi Santoso</option>
+                <?php endif; ?>
             </select>
             <i class="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none"></i>
         </div>
@@ -78,7 +84,13 @@
         <div class="relative">
             <select name="kategori" class="bg-white border border-gray-200 rounded-full px-4 py-2 pr-8 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#005691] appearance-none cursor-pointer">
                 <option value="">Semua Kategori</option>
-                <option value="Piutang ECES" <?= ($filters['kategori'] == 'Piutang ECES') ? 'selected' : '' ?>>Piutang ECES</option>
+                <?php if (!empty($categories)): ?>
+                    <?php foreach ($categories as $cat): ?>
+                        <option value="<?= htmlspecialchars($cat['kategori']) ?>" <?= ($filters['kategori'] == $cat['kategori']) ? 'selected' : '' ?>><?= htmlspecialchars($cat['kategori']) ?></option>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <option value="Piutang ECES" <?= ($filters['kategori'] == 'Piutang ECES') ? 'selected' : '' ?>>Piutang ECES</option>
+                <?php endif; ?>
             </select>
             <i class="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none"></i>
         </div>
@@ -87,14 +99,20 @@
         <div class="relative">
             <select name="stage" class="bg-white border border-gray-200 rounded-full px-4 py-2 pr-8 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#005691] appearance-none cursor-pointer">
                 <option value="">Semua Stage</option>
-                <option value="Investigasi" <?= ($filters['stage'] == 'Investigasi') ? 'selected' : '' ?>>Investigasi</option>
-                <option value="Review SPV" <?= ($filters['stage'] == 'Review SPV') ? 'selected' : '' ?>>Review SPV</option>
-                <option value="Review Head Unit" <?= ($filters['stage'] == 'Review Head Unit') ? 'selected' : '' ?>>Review Head Unit</option>
-                <option value="Konfirmasi Auditee" <?= ($filters['stage'] == 'Konfirmasi Auditee') ? 'selected' : '' ?>>Konfirmasi Auditee</option>
-                <option value="Telaah" <?= ($filters['stage'] == 'Telaah') ? 'selected' : '' ?>>Telaah</option>
-                <option value="Terbit BA" <?= ($filters['stage'] == 'Terbit BA') ? 'selected' : '' ?>>Terbit BA</option>
-                <option value="Feedback" <?= ($filters['stage'] == 'Feedback') ? 'selected' : '' ?>>Feedback</option>
-                <option value="Closed" <?= ($filters['stage'] == 'Closed') ? 'selected' : '' ?>>Closed</option>
+                <?php if (!empty($stages)): ?>
+                    <?php foreach ($stages as $stg): ?>
+                        <option value="<?= htmlspecialchars($stg->nama_stage) ?>" <?= ($filters['stage'] == $stg->nama_stage) ? 'selected' : '' ?>><?= htmlspecialchars($stg->nama_stage) ?></option>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <option value="Investigasi" <?= ($filters['stage'] == 'Investigasi') ? 'selected' : '' ?>>Investigasi</option>
+                    <option value="Review SPV" <?= ($filters['stage'] == 'Review SPV') ? 'selected' : '' ?>>Review SPV</option>
+                    <option value="Review Head Unit" <?= ($filters['stage'] == 'Review Head Unit') ? 'selected' : '' ?>>Review Head Unit</option>
+                    <option value="Konfirmasi Auditee" <?= ($filters['stage'] == 'Konfirmasi Auditee') ? 'selected' : '' ?>>Konfirmasi Auditee</option>
+                    <option value="Telaah" <?= ($filters['stage'] == 'Telaah') ? 'selected' : '' ?>>Telaah</option>
+                    <option value="Terbit BA" <?= ($filters['stage'] == 'Terbit BA') ? 'selected' : '' ?>>Terbit BA</option>
+                    <option value="Feedback" <?= ($filters['stage'] == 'Feedback') ? 'selected' : '' ?>>Feedback</option>
+                    <option value="Closed" <?= ($filters['stage'] == 'Closed') ? 'selected' : '' ?>>Closed</option>
+                <?php endif; ?>
             </select>
             <i class="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none"></i>
         </div>
@@ -103,7 +121,13 @@
         <div class="relative">
             <select name="sumber" class="bg-white border border-gray-200 rounded-full px-4 py-2 pr-8 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#005691] appearance-none cursor-pointer">
                 <option value="">Semua Sumber</option>
-                <option value="ECES" <?= ($filters['sumber'] == 'ECES') ? 'selected' : '' ?>>ECES</option>
+                <?php if (!empty($sources)): ?>
+                    <?php foreach ($sources as $src): ?>
+                        <option value="<?= htmlspecialchars($src['sumber']) ?>" <?= ($filters['sumber'] == $src['sumber']) ? 'selected' : '' ?>><?= htmlspecialchars($src['sumber']) ?></option>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <option value="ECES" <?= ($filters['sumber'] == 'ECES') ? 'selected' : '' ?>>ECES</option>
+                <?php endif; ?>
             </select>
             <i class="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none"></i>
         </div>
@@ -297,24 +321,47 @@
     </div>
 
     <!-- Pagination Footer -->
+    <?php
+        $curr = isset($current_page) ? (int)$current_page : 1;
+        $tot_pages = isset($total_pages) ? (int)$total_pages : 1;
+        $query_params = $_GET;
+    ?>
     <div class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-2">
-        <button type="button" class="border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-xs font-semibold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors">
-            <i class="bi bi-arrow-left"></i> Previous
-        </button>
+        <?php if ($curr > 1): 
+            $query_params['page'] = $curr - 1;
+        ?>
+            <a href="<?= site_url('dashboard?' . http_build_query($query_params)) ?>" class="border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-xs font-semibold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors">
+                <i class="bi bi-arrow-left"></i> Previous
+            </a>
+        <?php else: ?>
+            <span class="border border-gray-200 bg-gray-50 text-gray-400 text-xs font-semibold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 cursor-not-allowed">
+                <i class="bi bi-arrow-left"></i> Previous
+            </span>
+        <?php endif; ?>
 
         <div class="flex items-center gap-1">
-            <span class="w-7 h-7 rounded-lg border border-[#005691] text-[#005691] bg-white font-bold text-xs flex items-center justify-center shadow-xs">1</span>
-            <button class="w-7 h-7 rounded-lg text-gray-600 hover:bg-gray-100 font-medium text-xs flex items-center justify-center">2</button>
-            <button class="w-7 h-7 rounded-lg text-gray-600 hover:bg-gray-100 font-medium text-xs flex items-center justify-center">3</button>
-            <span class="text-gray-400 text-xs px-1">...</span>
-            <button class="w-7 h-7 rounded-lg text-gray-600 hover:bg-gray-100 font-medium text-xs flex items-center justify-center">8</button>
-            <button class="w-7 h-7 rounded-lg text-gray-600 hover:bg-gray-100 font-medium text-xs flex items-center justify-center">9</button>
-            <button class="w-7 h-7 rounded-lg text-gray-600 hover:bg-gray-100 font-medium text-xs flex items-center justify-center">10</button>
+            <?php for ($p = 1; $p <= $tot_pages; $p++): 
+                $query_params['page'] = $p;
+            ?>
+                <?php if ($p == $curr): ?>
+                    <span class="w-7 h-7 rounded-lg border border-[#005691] text-[#005691] bg-white font-bold text-xs flex items-center justify-center shadow-xs"><?= $p ?></span>
+                <?php else: ?>
+                    <a href="<?= site_url('dashboard?' . http_build_query($query_params)) ?>" class="w-7 h-7 rounded-lg text-gray-600 hover:bg-gray-100 font-medium text-xs flex items-center justify-center"><?= $p ?></a>
+                <?php endif; ?>
+            <?php endfor; ?>
         </div>
 
-        <button type="button" class="border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-xs font-semibold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors">
-            Next <i class="bi bi-arrow-right"></i>
-        </button>
+        <?php if ($curr < $tot_pages): 
+            $query_params['page'] = $curr + 1;
+        ?>
+            <a href="<?= site_url('dashboard?' . http_build_query($query_params)) ?>" class="border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-xs font-semibold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors">
+                Next <i class="bi bi-arrow-right"></i>
+            </a>
+        <?php else: ?>
+            <span class="border border-gray-200 bg-gray-50 text-gray-400 text-xs font-semibold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 cursor-not-allowed">
+                Next <i class="bi bi-arrow-right"></i>
+            </span>
+        <?php endif; ?>
     </div>
 </section>
 
@@ -355,7 +402,7 @@
 
             <!-- Nama / Judul Case Input -->
             <div class="pt-1">
-                <input type="text" name="judul_case" id="inputJudulCase" required placeholder="| Nama/Judul Case..." class="w-full border-0 border-b border-gray-200 focus:border-[#005691] focus:ring-0 text-base font-medium text-gray-800 placeholder-gray-400 py-1.5 focus:outline-none">
+                <input type="text" name="judul_case" id="inputJudulCase" required placeholder="Nama/Judul Case..." class="w-full border-0 border-b border-gray-200 focus:border-[#005691] focus:ring-0 text-base font-medium text-gray-800 placeholder-gray-400 py-1.5 focus:outline-none">
             </div>
 
             <!-- Deskripsi / Uraian Temuan Input -->
@@ -424,16 +471,34 @@
                     </label>
                     <span class="text-gray-400 font-medium">:</span>
                     <div class="relative">
-                        <select name="proyek" id="selectProyek" class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 pr-8 text-xs text-gray-700 focus:outline-none focus:border-[#005691] appearance-none cursor-pointer">
+                        <select name="project_name" id="selectProyek" class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 pr-8 text-xs text-gray-700 focus:outline-none focus:border-[#005691] appearance-none cursor-pointer">
                             <option value="" disabled selected>Pilih proyek/area/unit bisnis</option>
-                            <option value="Arjawinangun 1 T3">Arjawinangun 1 T3</option>
-                            <option value="Arjawinangun By Pass">Arjawinangun By Pass</option>
-                            <option value="RN Gegunung">RN Gegunung</option>
-                            <option value="RN Ningrat">RN Ningrat</option>
-                            <option value="RN Pejambon">RN Pejambon</option>
-                            <option value="Trusmiland 5">Trusmiland 5</option>
+                            <?php if (!empty($projects)): ?>
+                                <?php foreach ($projects as $prj): ?>
+                                    <option value="<?= htmlspecialchars(is_array($prj) ? $prj['project_name'] : $prj->project_name) ?>"><?= htmlspecialchars(is_array($prj) ? $prj['project_name'] : $prj->project_name) ?></option>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <option value="Arjawinangun 1 T3">Arjawinangun 1 T3</option>
+                                <option value="Arjawinangun By Pass">Arjawinangun By Pass</option>
+                                <option value="RN Gegunung">RN Gegunung</option>
+                                <option value="RN Ningrat">RN Ningrat</option>
+                                <option value="RN Pejambon">RN Pejambon</option>
+                                <option value="Trusmiland 5">Trusmiland 5</option>
+                            <?php endif; ?>
                         </select>
                         <i class="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <!-- Nilai Temuan (Rp) -->
+                <div class="grid grid-cols-[150px_12px_1fr] items-center text-xs">
+                    <label class="font-medium text-gray-700 flex items-center gap-2">
+                        <i class="bi bi-cash-stack text-gray-400 text-sm shrink-0"></i>
+                        <span>Nilai Temuan (Rp)</span>
+                    </label>
+                    <span class="text-gray-400 font-medium">:</span>
+                    <div>
+                        <input type="number" name="nilai" id="inputNilai" placeholder="0" class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:border-[#005691]">
                     </div>
                 </div>
             </div>
