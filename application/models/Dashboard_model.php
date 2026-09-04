@@ -145,6 +145,9 @@ class Dashboard_model extends CI_Model
         $this->db->select('
             a.id,
             a.no_invoice,
+            a.judul_case,
+            a.deskripsi,
+            a.catatan_head_audit,
             a.sumber,
             a.kategori,
             a.project_name,

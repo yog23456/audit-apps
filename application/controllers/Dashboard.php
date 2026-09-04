@@ -246,6 +246,21 @@ class Dashboard extends CI_Controller
             */
             $data['case_list'][] = array(
 
+                'id' =>
+                    $row['id'],
+
+                'stage_urutan' =>
+                    $row['stage_urutan'] ?? 1,
+
+                'judul_case' =>
+                    $row['judul_case'] ?? $row['project_name'],
+
+                'deskripsi' =>
+                    $row['deskripsi'] ?? '',
+
+                'catatan_head_audit' =>
+                    $row['catatan_head_audit'] ?? '',
+
                 'invoice' =>
                     $row['no_invoice'] ?? '-',
 
@@ -488,6 +503,173 @@ class Dashboard extends CI_Controller
         }
 
         $this->session->set_flashdata('success', 'Kasus Audit ' . $no_invoice . ' berhasil ditambahkan!');
+        redirect('dashboard');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPLOAD DOKUMEN & ADVANSE STAGE (AJAX & POST)
+    |--------------------------------------------------------------------------
+    */
+    public function upload_stage()
+    {
+        $id_audit = (int) $this->input->post('id_audit');
+        if (!$id_audit) {
+            $this->output
+                ->set_status_header(400)
+                ->set_content_type('application/json', 'utf-8')
+                ->set_output(json_encode(['status' => 'error', 'message' => 'ID Audit tidak valid']));
+            return;
+        }
+
+        $audit = $this->Audit_model->get_audit_by_id($id_audit);
+        if (!$audit) {
+            $this->output
+                ->set_status_header(404)
+                ->set_content_type('application/json', 'utf-8')
+                ->set_output(json_encode(['status' => 'error', 'message' => 'Data Audit tidak ditemukan']));
+            return;
+        }
+
+        $current_urutan = (int) ($audit->urutan ?? 1);
+        $next_urutan    = ($current_urutan < 8) ? $current_urutan + 1 : 8;
+
+        // Map folder per urutan stage
+        $folder_map = [
+            1 => 'investigasi',
+            2 => 'review_spv',
+            3 => 'review_head',
+            4 => 'auditee',
+            5 => 'telaah',
+            6 => 'berita_acara',
+            7 => 'feedback',
+            8 => 'closed'
+        ];
+        $folder = $folder_map[$current_urutan] ?? 'documents';
+
+        // Handle Upload jika ada berkas yang dikirim
+        $upload_file_path = null;
+        if (!empty($_FILES['upload_file']['name'])) {
+            $this->load->library('upload');
+            $config['upload_path']   = './uploads/' . $folder . '/';
+            $config['allowed_types'] = 'pdf|doc|docx|jpg|jpeg|png|xlsx|zip';
+            $config['max_size']      = 10240;
+            $config['encrypt_name']  = TRUE;
+
+            if (!is_dir($config['upload_path'])) {
+                mkdir($config['upload_path'], 0777, true);
+            }
+
+            $this->upload->initialize($config);
+
+            if ($this->upload->do_upload('upload_file')) {
+                $upload_file_path = 'uploads/' . $folder . '/' . $this->upload->data('file_name');
+
+                // Simpan ke tabel riwayat stage yang sesuai jika tabel ada
+                $id_user = $this->session->userdata('id_user') ? $this->session->userdata('id_user') : 1;
+                switch ($current_urutan) {
+                    case 1:
+                        $this->db->insert('investigasi', ['id_audit' => $id_audit, 'upload_file' => $upload_file_path, 'id_user' => $id_user]);
+                        break;
+                    case 2:
+                        $this->db->insert('review_spv', ['id_audit' => $id_audit, 'keputusan' => 'approved', 'catatan' => 'Upload via Dashboard', 'id_user' => $id_user]);
+                        break;
+                    case 3:
+                        $this->db->insert('review_head', ['id_audit' => $id_audit, 'keputusan_spv' => 'approved', 'catatan' => 'Upload via Dashboard', 'id_user' => $id_user]);
+                        break;
+                    case 4:
+                        $this->db->insert('auditee', ['id_audit' => $id_audit, 'upload_file' => $upload_file_path, 'id_user' => $id_user]);
+                        break;
+                    case 5:
+                        $this->db->insert('telaah', ['id_audit' => $id_audit, 'upload_file' => $upload_file_path, 'id_user' => $id_user]);
+                        break;
+                    case 6:
+                        $this->db->insert('berita_acara', ['id_audit' => $id_audit, 'keputusan_spv' => 'published', 'catatan' => 'Terbit via Dashboard', 'id_user' => $id_user]);
+                        break;
+                    case 7:
+                        $this->db->insert('feedback', ['id_audit' => $id_audit, 'upload_file' => $upload_file_path, 'catatan' => 'Feedback via Dashboard', 'id_user' => $id_user]);
+                        break;
+                }
+            }
+        }
+
+        // Pindahkan stage ke urutan berikutnya di database audit
+        $this->Audit_model->advance_stage_by_urutan($id_audit, $next_urutan);
+
+        $next_stage_obj  = $this->Audit_model->get_stage_by_urutan($next_urutan);
+        $next_stage_name = $next_stage_obj ? $next_stage_obj->nama_stage : 'tahap berikutnya';
+
+        $is_ajax = $this->input->is_ajax_request() ||
+                   ($this->input->get_request_header('X-Requested-With') === 'XMLHttpRequest');
+
+        if ($is_ajax) {
+            $this->output
+                ->set_status_header(200)
+                ->set_content_type('application/json', 'utf-8')
+                ->set_output(json_encode([
+                    'status'     => 'success',
+                    'message'    => 'Dokumen berhasil diunggah untuk Case ' . $audit->no_invoice . ' dan diteruskan ke ' . $next_stage_name . '.',
+                    'next_stage' => $next_stage_name
+                ]));
+            return;
+        }
+
+        $this->session->set_flashdata('success', 'Case ' . $audit->no_invoice . ' berhasil diupdate ke stage ' . $next_stage_name);
+        redirect('dashboard');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE DATA CASE (AJAX & POST)
+    |--------------------------------------------------------------------------
+    */
+    public function update_case()
+    {
+        $id_audit = (int) $this->input->post('id_audit');
+        if (!$id_audit) {
+            $this->output
+                ->set_status_header(400)
+                ->set_content_type('application/json', 'utf-8')
+                ->set_output(json_encode(['status' => 'error', 'message' => 'ID Audit tidak valid']));
+            return;
+        }
+
+        $project_name = $this->input->post('project_name');
+        if (empty($project_name)) {
+            $project_name = $this->input->post('proyek');
+        }
+
+        $data = [
+            'judul_case'         => $this->input->post('judul_case', TRUE),
+            'deskripsi'          => $this->input->post('deskripsi', TRUE),
+            'catatan_head_audit' => $this->input->post('catatan_head_audit', TRUE),
+            'sumber'             => $this->input->post('sumber', TRUE),
+            'kategori'           => $this->input->post('kategori', TRUE),
+            'project_name'       => $project_name,
+            'nilai'              => (float) $this->input->post('nilai'),
+            'deadline'           => $this->input->post('target_actual', TRUE),
+            'target_aktual'      => $this->input->post('target_actual', TRUE),
+            'updated_at'         => date('Y-m-d H:i:s')
+        ];
+
+        $this->db->where('id', $id_audit);
+        $this->db->update('audit', $data);
+
+        $is_ajax = $this->input->is_ajax_request() ||
+                   ($this->input->get_request_header('X-Requested-With') === 'XMLHttpRequest');
+
+        if ($is_ajax) {
+            $this->output
+                ->set_status_header(200)
+                ->set_content_type('application/json', 'utf-8')
+                ->set_output(json_encode([
+                    'status'  => 'success',
+                    'message' => 'Data kasus berhasil diperbarui!'
+                ]));
+            return;
+        }
+
+        $this->session->set_flashdata('success', 'Data kasus berhasil diperbarui!');
         redirect('dashboard');
     }
 }

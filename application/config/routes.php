@@ -56,6 +56,7 @@ $route['translate_uri_dashes'] = FALSE;
 $route['dashboard']                 = 'dashboard/index';
 $route['dashboard/filter']          = 'dashboard/filter_ajax';
 $route['dashboard/case/store']      = 'dashboard/store_case_manual';
+$route['dashboard/case/update']     = 'dashboard/update_case';
 
 
 

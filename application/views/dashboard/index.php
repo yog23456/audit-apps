@@ -249,7 +249,17 @@
 
                         <!-- Action Edit Circle Button -->
                         <td class="px-3.5 py-3.5 whitespace-nowrap text-center" onclick="event.stopPropagation();">
-                            <button type="button" class="w-7 h-7 rounded-full bg-[#005691] hover:bg-[#004475] text-white flex items-center justify-center text-xs transition-colors mx-auto shadow-sm" title="Edit Case">
+                            <button type="button" class="btn-edit-case w-7 h-7 rounded-full bg-[#005691] hover:bg-[#004475] text-white flex items-center justify-center text-xs transition-colors mx-auto shadow-sm" title="Edit Case"
+                                data-id="<?= (int)$row['id'] ?>"
+                                data-invoice="<?= htmlspecialchars($row['invoice']) ?>"
+                                data-judul="<?= htmlspecialchars($row['judul_case']) ?>"
+                                data-deskripsi="<?= htmlspecialchars($row['deskripsi']) ?>"
+                                data-sumber="<?= htmlspecialchars($row['sumber']) ?>"
+                                data-kategori="<?= htmlspecialchars($row['kategori']) ?>"
+                                data-proyek="<?= htmlspecialchars($row['proyek']) ?>"
+                                data-nilai="<?= (float)$row['nilai'] ?>"
+                                data-deadline="<?= htmlspecialchars($row['deadline']) ?>"
+                                data-catatan="<?= htmlspecialchars($row['catatan_head_audit']) ?>">
                                 <i class="bi bi-pencil-fill text-[10px]"></i>
                             </button>
                         </td>
@@ -279,7 +289,7 @@
                                                 array('name' => 'Feedback',    'icon' => 'bi-chat-heart'),
                                                 array('name' => 'Closed',      'icon' => 'bi-list-check'),
                                             );
-                                            $current_step = 0; // index tahap yang sedang aktif
+                                            $current_step = max(0, (int)($row['stage_urutan'] ?? 1) - 1); // index tahap yang sedang aktif
                                             foreach ($stages_list as $i => $stage):
                                                 $is_active = ($i === $current_step);
                                                 $is_done   = ($i < $current_step);
@@ -294,31 +304,31 @@
                                                         <i class="bi <?= $stage['icon'] ?>"></i>
                                                     </div>
                                                     <span class="text-[11px] mt-2 block text-center whitespace-nowrap
-                        <?= $is_active ? 'font-semibold text-orange-500' : 'font-medium text-gray-400' ?>">
+                        <?= $is_active ? 'font-semibold text-orange-500' : ($is_done ? 'font-medium text-orange-600' : 'font-medium text-gray-400') ?>">
                                                         <?= $stage['name'] ?>
                                                     </span>
                                                 </div>
 
                                                 <?php if ($i < count($stages_list) - 1): ?>
-                                                    <div class="flex-1 h-[2px] bg-gray-200 mx-1 -mt-5"></div>
+                                                    <div class="flex-1 h-[2px] <?= ($i < $current_step) ? 'bg-orange-500' : 'bg-gray-200' ?> mx-1 -mt-5"></div>
                                                 <?php endif; ?>
                                             <?php endforeach; ?>
                                         </div>
 
                                     </div>
-                                    <div class="flex justify-end mt-4">
-                                        <button type="button" class="btn-open-upload bg-[#005691] hover:bg-[#004475] text-white text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors" data-invoice="<?= htmlspecialchars($row['invoice']) ?>" data-stage="<?= htmlspecialchars($row['stage']) ?>" data-stage-color="<?= htmlspecialchars($row['stage_color']) ?>">
-                                            + Update
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+                                     <div class="flex justify-end mt-4">
+                                         <button type="button" class="btn-open-upload bg-[#005691] hover:bg-[#004475] text-white text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors" data-id="<?= (int)$row['id'] ?>" data-urutan="<?= (int)$row['stage_urutan'] ?>" data-invoice="<?= htmlspecialchars($row['invoice']) ?>" data-stage="<?= htmlspecialchars($row['stage']) ?>" data-stage-color="<?= htmlspecialchars($row['stage_color']) ?>">
+                                             + Update
+                                         </button>
+                                     </div>
+                                 </div>
+                             </div>
+                         </td>
+                     </tr>
+                 <?php endforeach; ?>
+             </tbody>
+         </table>
+     </div>
 
     <!-- Pagination Footer -->
     <?php
@@ -527,87 +537,226 @@
 <!-- ============ MODAL UPLOAD DOKUMEN ============ -->
 <div id="modalUploadDokumen" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-[560px] w-full shadow-2xl border border-gray-100 flex flex-col overflow-hidden">
-        
-        <!-- Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <h3 class="font-bold text-sm text-gray-800">
-                Upload Dokumen Investigasi
-            </h3>
-            <button type="button" id="uploadModalCloseX" class="text-gray-400 hover:text-gray-600 text-lg p-1 focus:outline-none cursor-pointer">
-                <i class="bi bi-x-lg text-sm"></i>
-            </button>
-        </div>
-
-        <!-- Content -->
-        <div class="p-6 space-y-4">
-            <!-- Case & Stage Row -->
-            <div class="flex items-center text-xs text-gray-600">
-                <span class="font-medium">Case:</span>
-                <span id="uploadModalBadge" class="text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full ml-2">Investigasi</span>
-                <span id="uploadModalInvoice" class="font-bold text-gray-800 ml-2">AUD-2026-004</span>
+        <form id="formUploadDokumen" action="<?= site_url('dashboard/upload_stage') ?>" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="id_audit" id="uploadAuditId" value="">
+            
+            <!-- Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h3 class="font-bold text-sm text-gray-800">
+                    Upload Dokumen <span id="uploadModalTitleStage">Investigasi</span>
+                </h3>
+                <button type="button" id="uploadModalCloseX" class="text-gray-400 hover:text-gray-600 text-lg p-1 focus:outline-none cursor-pointer">
+                    <i class="bi bi-x-lg text-sm"></i>
+                </button>
             </div>
 
-            <!-- Warning Alert Block -->
-            <div id="uploadModalAlert" class="bg-orange-50/50 border border-orange-100 rounded-xl p-3.5 text-xs text-orange-600 leading-relaxed">
-                Upload dokumen olahan data investigasi. Setelah submit diteruskan ke SPV untuk direview.
-            </div>
-
-            <!-- Dotted Divider -->
-            <div class="border-t border-dashed border-gray-200"></div>
-
-            <!-- Drag & Drop / Selection Area -->
-            <div id="uploadDropzone" class="border-2 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50/10 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50/30">
-                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                    <i class="bi bi-cloud-arrow-up text-gray-500 text-lg"></i>
+            <!-- Content -->
+            <div class="p-6 space-y-4">
+                <!-- Case & Stage Row -->
+                <div class="flex items-center text-xs text-gray-600">
+                    <span class="font-medium">Case:</span>
+                    <span id="uploadModalBadge" class="text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full ml-2">Investigasi</span>
+                    <span id="uploadModalInvoice" class="font-bold text-gray-800 ml-2">AUD-2026-004</span>
                 </div>
-                <span class="text-xs text-gray-500 text-center">
-                    <span class="text-[#005691] font-semibold hover:underline">Klik untuk mengunggah</span> atau seret dan lepas
-                </span>
-                <span class="text-[10px] text-gray-400 mt-1 block">PDF, PNG, JPG, atau DOCX (maks. 10MB)</span>
-                <input type="file" id="fileUploadInput" class="hidden" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx">
-            </div>
 
-            <!-- File Uploaded Card (Hidden by default) -->
-            <div id="fileStatusCard" class="hidden border border-blue-200 rounded-xl p-4 bg-blue-50/5 flex flex-col space-y-3">
-                <div class="flex items-center">
-                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-[#005691] flex items-center justify-center shrink-0">
-                        <i id="fileIcon" class="bi bi-file-earmark-pdf-fill text-lg"></i>
+                <!-- Warning Alert Block -->
+                <div id="uploadModalAlert" class="bg-orange-50/50 border border-orange-100 rounded-xl p-3.5 text-xs text-orange-600 leading-relaxed">
+                    Upload dokumen olahan data investigasi. Setelah submit diteruskan ke SPV untuk direview.
+                </div>
+
+                <!-- Dotted Divider -->
+                <div class="border-t border-dashed border-gray-200"></div>
+
+                <!-- Drag & Drop / Selection Area -->
+                <div id="uploadDropzone" class="border-2 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50/10 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50/30">
+                    <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                        <i class="bi bi-cloud-arrow-up text-gray-500 text-lg"></i>
                     </div>
-                    <div class="flex-1 min-w-0 ml-3">
-                        <div id="fileName" class="font-semibold text-gray-800 text-xs truncate">Tech design requirements.pdf</div>
-                        <div id="fileSize" class="text-[10px] text-gray-400">200 KB</div>
-                    </div>
-                    <i id="fileCheckIcon" class="bi bi-check-circle-fill text-[#005691] text-base ml-2 shrink-0 opacity-0 transition-opacity duration-300"></i>
-                </div>
-                
-                <!-- Progress bar -->
-                <div class="flex items-center gap-3">
-                    <div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div id="uploadProgressBar" class="h-full bg-[#005691] rounded-full transition-all duration-300" style="width: 0%"></div>
-                    </div>
-                    <span id="uploadProgressPercent" class="text-[10px] font-semibold text-gray-500 shrink-0">0%</span>
+                    <span class="text-xs text-gray-500 text-center">
+                        <span class="text-[#005691] font-semibold hover:underline">Klik untuk mengunggah</span> atau seret dan lepas
+                    </span>
+                    <span class="text-[10px] text-gray-400 mt-1 block">PDF, PNG, JPG, atau DOCX (maks. 10MB)</span>
+                    <input type="file" name="upload_file" id="fileUploadInput" class="hidden" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx">
                 </div>
 
-                <!-- Card Actions -->
-                <div class="flex items-center justify-end gap-3 text-[11px] font-semibold pt-1">
-                    <button type="button" id="removeFileBtn" class="text-red-500 hover:text-red-600 flex items-center gap-1 cursor-pointer">
-                        <i class="bi bi-trash"></i> Hapus
-                    </button>
-                    <button type="button" id="changeFileBtn" class="text-[#005691] hover:text-[#004475] flex items-center gap-1 cursor-pointer">
-                        <i class="bi bi-arrow-repeat"></i> Ganti
-                    </button>
+                <!-- File Uploaded Card (Hidden by default) -->
+                <div id="fileStatusCard" class="hidden border border-blue-200 rounded-xl p-4 bg-blue-50/5 flex flex-col space-y-3">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-lg bg-blue-50 text-[#005691] flex items-center justify-center shrink-0">
+                            <i id="fileIcon" class="bi bi-file-earmark-pdf-fill text-lg"></i>
+                        </div>
+                        <div class="flex-1 min-w-0 ml-3">
+                            <div id="fileName" class="font-semibold text-gray-800 text-xs truncate">Tech design requirements.pdf</div>
+                            <div id="fileSize" class="text-[10px] text-gray-400">200 KB</div>
+                        </div>
+                        <i id="fileCheckIcon" class="bi bi-check-circle-fill text-[#005691] text-base ml-2 shrink-0 opacity-0 transition-opacity duration-300"></i>
+                    </div>
+                    
+                    <!-- Progress bar -->
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div id="uploadProgressBar" class="h-full bg-[#005691] rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <span id="uploadProgressPercent" class="text-[10px] font-semibold text-gray-500 shrink-0">0%</span>
+                    </div>
+
+                    <!-- Card Actions -->
+                    <div class="flex items-center justify-end gap-3 text-[11px] font-semibold pt-1">
+                        <button type="button" id="removeFileBtn" class="text-red-500 hover:text-red-600 flex items-center gap-1 cursor-pointer">
+                            <i class="bi bi-trash"></i> Hapus
+                        </button>
+                        <button type="button" id="changeFileBtn" class="text-[#005691] hover:text-[#004475] flex items-center gap-1 cursor-pointer">
+                            <i class="bi bi-arrow-repeat"></i> Ganti
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Footer -->
+            <!-- Footer -->
         <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
             <button type="button" id="uploadModalCancel" class="border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold px-5 py-2 rounded-xl text-xs transition-colors cursor-pointer">
                 Batal
             </button>
-            <button type="button" id="submitUploadBtn" class="bg-[#a5c3db] pointer-events-none text-white font-semibold px-5 py-2 rounded-xl text-xs transition-all shadow-sm">
+            <button type="submit" id="submitUploadBtn" class="bg-[#a5c3db] pointer-events-none text-white font-semibold px-5 py-2 rounded-xl text-xs transition-all shadow-sm">
                 Konfirmasi & Submit
             </button>
         </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============ MODAL EDIT CASE ============ -->
+<div id="modalEditCase" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-[560px] w-full p-6 shadow-2xl border border-gray-100 flex flex-col max-h-[94vh] overflow-y-auto">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-gray-100">
+            <h3 class="font-bold text-base text-gray-800">
+                Edit Case <span id="editModalInvoiceTitle" class="text-[#005691]">AUD-2026-001</span>
+            </h3>
+            <button type="button" id="editModalCloseBtn" class="text-gray-400 hover:text-gray-600 text-lg p-1 focus:outline-none cursor-pointer">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <form id="formEditCase" action="<?= site_url('dashboard/case/update') ?>" method="post" class="space-y-4">
+            <input type="hidden" name="id_audit" id="editAuditId">
+
+            <!-- Nama / Judul Case Input -->
+            <div class="pt-1">
+                <label class="block text-[11px] font-semibold text-gray-500 mb-1">Judul Case</label>
+                <input type="text" name="judul_case" id="editJudulCase" required placeholder="Nama/Judul Case..." class="w-full border-0 border-b border-gray-200 focus:border-[#005691] focus:ring-0 text-base font-medium text-gray-800 placeholder-gray-400 py-1.5 focus:outline-none">
+            </div>
+
+            <!-- Deskripsi / Uraian Temuan Input -->
+            <div class="relative pt-1">
+                <label class="block text-[11px] font-semibold text-gray-500 mb-1">Deskripsi / Uraian Temuan</label>
+                <div class="flex items-start gap-2">
+                    <i class="bi bi-card-text text-gray-400 text-sm mt-1 shrink-0"></i>
+                    <textarea name="deskripsi" id="editDeskripsi" rows="3" placeholder="Deskripsi/Uraian Temuan" class="w-full border border-gray-200 rounded-xl p-2.5 text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:border-[#005691] resize-none"></textarea>
+                </div>
+            </div>
+
+            <!-- Form Row Fields -->
+            <div class="space-y-3 pt-2">
+                <!-- Sumber Informasi -->
+                <div class="grid grid-cols-[150px_12px_1fr] items-center text-xs">
+                    <label class="font-medium text-gray-700 flex items-center gap-2">
+                        <i class="bi bi-grid-1x2 text-gray-400 text-sm shrink-0"></i>
+                        <span>Sumber Informasi<span class="text-red-500">*</span></span>
+                    </label>
+                    <span class="text-gray-400 font-medium">:</span>
+                    <div class="relative">
+                        <select name="sumber" id="editSumber" required class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 pr-8 text-xs text-gray-700 focus:outline-none focus:border-[#005691] appearance-none cursor-pointer">
+                            <option value="ECES">ECES</option>
+                            <option value="Whistleblower System">Whistleblower System</option>
+                            <option value="Audit SOP Internal">Audit SOP Internal</option>
+                            <option value="Request Divisi Direksi">Request Divisi Direksi</option>
+                        </select>
+                        <i class="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <!-- Kategori Case -->
+                <div class="grid grid-cols-[150px_12px_1fr] items-center text-xs">
+                    <label class="font-medium text-gray-700 flex items-center gap-2">
+                        <i class="bi bi-search text-gray-400 text-sm shrink-0"></i>
+                        <span>Kategori Case<span class="text-red-500">*</span></span>
+                    </label>
+                    <span class="text-gray-400 font-medium">:</span>
+                    <div>
+                        <input type="text" name="kategori" id="editKategori" required placeholder="Isi kategori case" class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:border-[#005691]">
+                    </div>
+                </div>
+
+                <!-- Proyek / Area / Unit Bisnis -->
+                <div class="grid grid-cols-[150px_12px_1fr] items-center text-xs">
+                    <label class="font-medium text-gray-700 flex items-center gap-2">
+                        <i class="bi bi-house-door text-gray-400 text-sm shrink-0"></i>
+                        <span>Proyek/Area/Unit Bisnis</span>
+                    </label>
+                    <span class="text-gray-400 font-medium">:</span>
+                    <div class="relative">
+                        <select name="project_name" id="editProyek" class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 pr-8 text-xs text-gray-700 focus:outline-none focus:border-[#005691] appearance-none cursor-pointer">
+                            <?php if (!empty($projects)): ?>
+                                <?php foreach ($projects as $prj): ?>
+                                    <option value="<?= htmlspecialchars(is_array($prj) ? $prj['project_name'] : $prj->project_name) ?>"><?= htmlspecialchars(is_array($prj) ? $prj['project_name'] : $prj->project_name) ?></option>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <option value="Arjawinangun 1 T3">Arjawinangun 1 T3</option>
+                                <option value="Arjawinangun By Pass">Arjawinangun By Pass</option>
+                                <option value="RN Gegunung">RN Gegunung</option>
+                                <option value="RN Ningrat">RN Ningrat</option>
+                                <option value="RN Pejambon">RN Pejambon</option>
+                                <option value="Trusmiland 5">Trusmiland 5</option>
+                            <?php endif; ?>
+                        </select>
+                        <i class="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <!-- Nilai Temuan (Rp) -->
+                <div class="grid grid-cols-[150px_12px_1fr] items-center text-xs">
+                    <label class="font-medium text-gray-700 flex items-center gap-2">
+                        <i class="bi bi-cash-stack text-gray-400 text-sm shrink-0"></i>
+                        <span>Nilai Temuan (Rp)</span>
+                    </label>
+                    <span class="text-gray-400 font-medium">:</span>
+                    <div>
+                        <input type="number" name="nilai" id="editNilai" placeholder="0" class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:border-[#005691]">
+                    </div>
+                </div>
+
+                <!-- Target Actual / Deadline -->
+                <div class="grid grid-cols-[150px_12px_1fr] items-center text-xs">
+                    <label class="font-medium text-gray-700 flex items-center gap-2">
+                        <i class="bi bi-calendar-event text-gray-400 text-sm shrink-0"></i>
+                        <span>Deadline</span>
+                    </label>
+                    <span class="text-gray-400 font-medium">:</span>
+                    <div>
+                        <input type="date" name="target_actual" id="editDeadline" class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-xs text-gray-700 focus:outline-none focus:border-[#005691]">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Catatan / Instruksi Head Audit -->
+            <div class="pt-2">
+                <label class="block text-[11px] font-semibold text-gray-500 mb-1.5">
+                    Catatan/Intruksi Head Audit
+                </label>
+                <textarea name="catatan_head_audit" id="editCatatan" rows="3" placeholder="Konteks tambahan, referensi dokumen, atau intruksi khusus..." class="w-full bg-white border border-gray-200/80 rounded-xl p-3 text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:border-[#005691] resize-none"></textarea>
+            </div>
+
+            <!-- Modal Footer Action Buttons -->
+            <div class="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 mt-5">
+                <button type="button" id="editModalCancelBtn" class="border border-gray-200 hover:bg-gray-50 bg-white text-gray-700 font-semibold px-5 py-2 rounded-xl text-xs transition-colors cursor-pointer">
+                    Batal
+                </button>
+                <button type="submit" class="bg-[#005691] hover:bg-[#004475] text-white font-semibold px-5 py-2 rounded-xl text-xs shadow-sm transition-colors cursor-pointer">
+                    Simpan Perubahan
+                </button>
+            </div>
+        </form>
     </div>
 </div>

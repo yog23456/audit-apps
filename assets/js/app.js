@@ -260,9 +260,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function openUploadModal(btn) {
         if (!uploadModal) return;
+        var auditId = btn.getAttribute('data-id');
         var invoice = btn.getAttribute('data-invoice') || 'AUD-2026-004';
         var stage = btn.getAttribute('data-stage') || 'Investigasi';
         var stageColor = btn.getAttribute('data-stage-color') || 'bg-orange-500';
+
+        var uploadAuditIdInput = document.getElementById('uploadAuditId');
+        if (uploadAuditIdInput) uploadAuditIdInput.value = auditId;
 
         // Set case details
         if (uploadModalInvoice) uploadModalInvoice.textContent = invoice;
@@ -453,16 +457,144 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Submit upload action
-    if (submitUploadBtn) {
-        submitUploadBtn.addEventListener('click', function() {
-            var invoice = uploadModalInvoice ? uploadModalInvoice.textContent : 'AUD-2026-004';
-            var stage = uploadModalBadge ? uploadModalBadge.textContent : 'Investigasi';
-            var fileName = fileNameEl ? fileNameEl.textContent : 'dokumen';
+    // Submit upload action via Form AJAX
+    var formUploadDokumen = document.getElementById('formUploadDokumen');
+    if (formUploadDokumen) {
+        formUploadDokumen.addEventListener('submit', function (e) {
+            e.preventDefault();
 
-            closeUploadModal();
-            var nextStage = (stageNextMap[stage] && stageNextMap[stage].next) ? stageNextMap[stage].next : 'tahap berikutnya';
-            showToastAfterReload('Upload Berhasil', 'Dokumen "' + fileName + '" berhasil diunggah untuk Case ' + invoice + ' dan diteruskan ke ' + nextStage + '.');
+            var formData = new FormData(formUploadDokumen);
+
+            fetch(formUploadDokumen.getAttribute('action'), {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then(function (res) {
+                    if (!res.ok) {
+                        throw new Error('HTTP error ' + res.status);
+                    }
+                    return res.json();
+                })
+                .then(function (json) {
+                    if (json.status === 'success') {
+                        closeUploadModal();
+                        showToastAfterReload('Upload Berhasil', json.message);
+                    } else {
+                        alert('Gagal mengunggah dokumen: ' + (json.message || 'Silakan coba lagi.'));
+                    }
+                })
+                .catch(function (err) {
+                    console.error('Upload Error:', err);
+                    formUploadDokumen.submit();
+                });
+        });
+    }
+
+    // ---------- Modal: Edit Case ----------
+    var modalEditCase = document.getElementById('modalEditCase');
+    var btnEditCases = document.querySelectorAll('.btn-edit-case');
+    var editModalCloseBtn = document.getElementById('editModalCloseBtn');
+    var editModalCancelBtn = document.getElementById('editModalCancelBtn');
+    var formEditCase = document.getElementById('formEditCase');
+
+    function openEditModal(btn) {
+        if (!modalEditCase) return;
+
+        var id = btn.getAttribute('data-id');
+        var invoice = btn.getAttribute('data-invoice') || '';
+        var judul = btn.getAttribute('data-judul') || '';
+        var deskripsi = btn.getAttribute('data-deskripsi') || '';
+        var sumber = btn.getAttribute('data-sumber') || '';
+        var kategori = btn.getAttribute('data-kategori') || '';
+        var proyek = btn.getAttribute('data-proyek') || '';
+        var nilai = btn.getAttribute('data-nilai') || '0';
+        var deadline = btn.getAttribute('data-deadline') || '';
+        var catatan = btn.getAttribute('data-catatan') || '';
+
+        var titleEl = document.getElementById('editModalInvoiceTitle');
+        if (titleEl) titleEl.textContent = invoice;
+
+        var auditIdInput = document.getElementById('editAuditId');
+        if (auditIdInput) auditIdInput.value = id;
+
+        var judulInput = document.getElementById('editJudulCase');
+        if (judulInput) judulInput.value = judul;
+
+        var deskripsiInput = document.getElementById('editDeskripsi');
+        if (deskripsiInput) deskripsiInput.value = deskripsi;
+
+        var sumberSelect = document.getElementById('editSumber');
+        if (sumberSelect) sumberSelect.value = sumber;
+
+        var kategoriInput = document.getElementById('editKategori');
+        if (kategoriInput) kategoriInput.value = kategori;
+
+        var proyekSelect = document.getElementById('editProyek');
+        if (proyekSelect) proyekSelect.value = proyek;
+
+        var nilaiInput = document.getElementById('editNilai');
+        if (nilaiInput) nilaiInput.value = nilai;
+
+        var deadlineInput = document.getElementById('editDeadline');
+        if (deadlineInput) deadlineInput.value = deadline;
+
+        var catatanInput = document.getElementById('editCatatan');
+        if (catatanInput) catatanInput.value = catatan;
+
+        modalEditCase.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeEditModal() {
+        if (modalEditCase) {
+            modalEditCase.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+    }
+
+    btnEditCases.forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            openEditModal(btn);
+        });
+    });
+
+    if (editModalCloseBtn) editModalCloseBtn.addEventListener('click', closeEditModal);
+    if (editModalCancelBtn) editModalCancelBtn.addEventListener('click', closeEditModal);
+    if (modalEditCase) {
+        modalEditCase.addEventListener('click', function (e) {
+            if (e.target === modalEditCase) closeEditModal();
+        });
+    }
+
+    if (formEditCase) {
+        formEditCase.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            var formData = new FormData(formEditCase);
+
+            fetch(formEditCase.getAttribute('action'), {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then(function (res) {
+                    if (!res.ok) throw new Error('HTTP status ' + res.status);
+                    return res.json();
+                })
+                .then(function (json) {
+                    if (json.status === 'success') {
+                        closeEditModal();
+                        showToastAfterReload('Perubahan Disimpan', json.message || 'Data kasus berhasil diperbarui.');
+                    } else {
+                        alert('Gagal menyimpan perubahan: ' + (json.message || 'Silakan coba lagi.'));
+                    }
+                })
+                .catch(function (err) {
+                    console.error('Edit error:', err);
+                    formEditCase.submit();
+                });
         });
     }
 
